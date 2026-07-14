@@ -1,30 +1,43 @@
-import Link from "next/link";
+'use client';
+
+import { useState } from 'react';
+import FileUpload from '@/components/FileUpload';
 
 export default function Home() {
+  const [extractedText, setExtractedText] = useState('');
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center min-h-screen bg-zinc-50">
-      <div className="flex flex-col items-center gap-6 text-center">
-        <h1 className="text-3xl font-semibold text-black">
-          Welcome to QuizForge
-        </h1>
-        <p className="text-zinc-600">
-          Create quizzes and manage your classroom, all in one place.
+    <main className="min-h-screen paper-texture bg-[#FAF6ED] px-6 py-16">
+      <div className="max-w-2xl mx-auto mb-10 text-center">
+        <p className="text-xs tracking-[0.2em] uppercase text-[#2F6F4E] font-medium mb-2">
+          Teacher tools
         </p>
-        <div className="flex gap-4">
-          <Link
-            href="/login"
-            className="px-6 py-3 rounded-full bg-black text-white font-medium hover:bg-zinc-800"
-          >
-            Log In
-          </Link>
-          <Link
-            href="/signup"
-            className="px-6 py-3 rounded-full border border-black text-black font-medium hover:bg-zinc-100"
-          >
-            Sign Up
-          </Link>
-        </div>
+        <h1 className="text-4xl text-[#1E2A38]" style={{ fontFamily: 'var(--font-display)', fontWeight: 600 }}>
+          QuizForge
+        </h1>
+        <p className="text-[#6B7280] mt-2">Turn any document into a quiz, in seconds.</p>
       </div>
-    </div>
+
+      <FileUpload onTextExtracted={setExtractedText} />
+
+      {extractedText && (
+        <div className="max-w-2xl mx-auto mt-8">
+          <div className="bg-white border border-[#D9D0BC] rounded-lg shadow-sm">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-[#D9D0BC]">
+              <h2 className="text-sm font-medium text-[#1E2A38]">Extracted text</h2>
+              <span className="text-xs text-[#6B7280]" style={{ fontFamily: 'var(--font-mono)' }}>
+                {extractedText.split(/\s+/).filter(Boolean).length} words
+              </span>
+            </div>
+            <div
+              className="p-5 whitespace-pre-wrap text-sm text-[#1E2A38] max-h-96 overflow-y-auto"
+              style={{ fontFamily: 'var(--font-mono)', lineHeight: 1.7 }}
+            >
+              {extractedText}
+            </div>
+          </div>
+        </div>
+      )}
+    </main>
   );
 }
