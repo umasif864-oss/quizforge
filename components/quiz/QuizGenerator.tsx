@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { QuestionType, QuizQuestion } from "@/types/quiz";
 import QuizDisplay from "./QuizDisplay";
+import QuizList from "./QuizList";
 
 interface QuizGeneratorProps {
   extractedText: string;
@@ -24,6 +25,8 @@ export default function QuizGenerator({ extractedText, documentName }: QuizGener
   const [errorMessage, setErrorMessage] = useState("");
   const [quiz, setQuiz] = useState<QuizQuestion[] | null>(null);
   const [messageIndex, setMessageIndex] = useState(0);
+   const [quizReady, setQuizReady]       = useState(false);
+  const [reviewList, setReviewList]     = useState<{ id: number; text: string }[]>([]);
 
   useEffect(() => {
     if (status !== "loading") return;
@@ -57,8 +60,39 @@ export default function QuizGenerator({ extractedText, documentName }: QuizGener
   }
 
   if (status === "success" && quiz) {
-    return <QuizDisplay quiz={quiz} onGenerateAnother={handleReset} />;
+  if (!quizReady) {
+    return (
+      <div className="max-w-2xl mx-auto mt-8">
+        <p className="text-xs tracking-[0.2em] uppercase text-[#2F6F4E] font-medium mb-3 px-1">
+          Review your questions
+        </p>
+        <QuizList
+          initialQuestions={quiz.map((q) => q.question)}
+          onQuestionsChange={setReviewList}
+        />
+        <div className="flex justify-end mt-4">
+          <button
+            type="button"
+            onClick={() => setQuizReady(true)}
+            className="px-5 py-2.5 bg-[#2F6F4E] text-white rounded-lg text-sm font-medium hover:bg-[#24573D] transition-colors"
+          >
+            Start quiz →
+          </button>
+        </div>
+      </div>
+    );
   }
+
+  // Merge teacher edits back into the full quiz objects (options, answers, etc.)
+  const finalQuiz =
+    reviewList.length > 0
+      ? reviewList
+          .filter((item) => item.id < quiz.length)          // drop any manually-added questions
+          .map((item) => ({ ...quiz[item.id], question: item.text }))  // apply edited text
+      : quiz;                                                // no edits → use original
+
+  return <QuizDisplay quiz={finalQuiz} onGenerateAnother={handleReset} />;
+}
 
   return (
     <div className="max-w-2xl mx-auto mt-8 bg-white border border-[#D9D0BC] rounded-lg shadow-sm p-6 sm:p-8">
