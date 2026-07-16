@@ -44,3 +44,21 @@ body {
   background-image: radial-gradient(#D9D0BC 0.6px, transparent 0.6px);
   background-size: 16px 16px;
 }
+
+
+@keyframes ember-pulse {
+  0%, 100% { box-shadow: 0 0 20px 0 rgba(249, 115, 22, 0.35); }
+  50% { box-shadow: 0 0 32px 6px rgba(249, 115, 22, 0.55); }
+}
+@keyframes forge-sweep {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.quizforge-ember-pulse {
+  animation: ember-pulse 2s ease-in-out infinite;
+}
+.quizforge-forge-bar {
+  background: linear-gradient(90deg, #f97316 0%, #fde68a 50%, #f97316 100%);
+  background-size: 200% 100%;
+  animation: forge-sweep 1.4s linear infinite;
+}

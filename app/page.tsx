@@ -2,9 +2,11 @@
 
 import { useState } from 'react';
 import FileUpload from '@/components/FileUpload';
+import QuizGenerator from '@/components/quiz/QuizGenerator';
 
 export default function Home() {
   const [extractedText, setExtractedText] = useState('');
+  const [documentName, setDocumentName] = useState('');
 
   return (
     <main className="min-h-screen paper-texture bg-[#FAF6ED] px-6 py-16">
@@ -18,7 +20,12 @@ export default function Home() {
         <p className="text-[#6B7280] mt-2">Turn any document into a quiz, in seconds.</p>
       </div>
 
-      <FileUpload onTextExtracted={setExtractedText} />
+      <FileUpload
+        onTextExtracted={(text, name) => {
+          setExtractedText(text);
+          setDocumentName(name ?? '');
+        }}
+      />
 
       {extractedText && (
         <div className="max-w-2xl mx-auto mt-8">
@@ -37,6 +44,10 @@ export default function Home() {
             </div>
           </div>
         </div>
+      )}
+
+      {extractedText && (
+        <QuizGenerator extractedText={extractedText} documentName={documentName} />
       )}
     </main>
   );

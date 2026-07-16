@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 
 interface FileUploadProps {
-  onTextExtracted: (text: string) => void;
+  onTextExtracted: (text: string, fileName?: string) => void;
 }
 
 type Status = 'idle' | 'loading' | 'success' | 'error';
@@ -49,7 +49,7 @@ export default function FileUpload({ onTextExtracted }: FileUploadProps) {
         throw new Error(data.error || 'Failed to read the document.');
       }
 
-      onTextExtracted(data.text);
+      onTextExtracted(data.text, file.name);
       setStatus('success');
     } catch (err) {
       setStatus('error');
@@ -68,7 +68,7 @@ export default function FileUpload({ onTextExtracted }: FileUploadProps) {
 
   const handlePasteSubmit = () => {
     if (pastedText.trim()) {
-      onTextExtracted(pastedText.trim());
+      onTextExtracted(pastedText.trim(), 'Pasted text');
       setStatus('success');
       setFileName('Pasted text');
     }
