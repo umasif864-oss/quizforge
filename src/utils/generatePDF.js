@@ -1,6 +1,6 @@
 // src/utils/generatePDF.js
 import jsPDF from "jspdf";
-import "jspdf-autotable";
+import autoTable from "jspdf-autotable";
 
 /**
  * @param {Object} quiz
@@ -16,6 +16,8 @@ import "jspdf-autotable";
  * @param {"teacher"|"student"} version
  */
 export function generateQuizPDF(quiz, version = "student") {
+  if (typeof window === "undefined") return;
+
   const doc = new jsPDF({ unit: "pt", format: "letter" });
   const isTeacher = version === "teacher";
 
@@ -61,7 +63,6 @@ export function generateQuizPDF(quiz, version = "student") {
 
   // ── Header ────────────────────────────────────────────────────────────────
 
-  // Coloured banner
   doc.setFillColor(isTeacher ? 220 : 59, isTeacher ? 38 : 130, isTeacher ? 38 : 246);
   doc.rect(0, 0, PAGE_WIDTH, 70, "F");
 
@@ -77,7 +78,6 @@ export function generateQuizPDF(quiz, version = "student") {
 
   y = 90;
 
-  // Meta row
   if (quiz.subject) {
     writeLine(`Subject: ${quiz.subject}`, { fontSize: 10, color: [100, 100, 100] });
   }
@@ -93,7 +93,6 @@ export function generateQuizPDF(quiz, version = "student") {
   quiz.questions.forEach((q, i) => {
     checkPageBreak(60);
 
-    // Question number + text
     writeLine(`${i + 1}.  ${q.text}`, { fontSize: 12, fontStyle: "bold", gap: 10 });
 
     if (q.type === "multiple-choice" && Array.isArray(q.options)) {
@@ -109,12 +108,11 @@ export function generateQuizPDF(quiz, version = "student") {
           indent: 16,
           fontSize: 10,
           fontStyle: "bold",
-          color: [22, 163, 74], // green
+          color: [22, 163, 74],
           gap: 4,
         });
       }
     } else {
-      // Short-answer blank lines for students; model answer for teachers
       if (isTeacher && q.correctAnswer) {
         writeLine(`Answer: ${q.correctAnswer}`, {
           indent: 16,
@@ -124,7 +122,6 @@ export function generateQuizPDF(quiz, version = "student") {
           gap: 4,
         });
       } else {
-        // Draw 3 ruled lines for writing
         for (let ln = 0; ln < 3; ln++) {
           checkPageBreak(22);
           doc.setDrawColor(180, 180, 180);
@@ -135,7 +132,7 @@ export function generateQuizPDF(quiz, version = "student") {
       }
     }
 
-    y += 14; // breathing room between questions
+    y += 14;
     drawHRule([230, 230, 230]);
   });
 
@@ -154,7 +151,7 @@ export function generateQuizPDF(quiz, version = "student") {
       q.correctAnswer ?? "—",
     ]);
 
-    doc.autoTable({
+    autoTable(doc, {
       startY: y,
       head: [["#", "Question", "Answer"]],
       body: tableBody,
