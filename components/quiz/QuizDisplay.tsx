@@ -2,6 +2,7 @@
 import QuizList from "./QuizList";
 import { useState } from "react";
 import type { QuizQuestion } from "@/types/quiz";
+import { generateQuizPDF } from "../../src/utils/generatePDF";
 
 interface QuizDisplayProps {
   quiz: QuizQuestion[];
@@ -15,9 +16,24 @@ export default function QuizDisplay({ quiz, onGenerateAnother }: QuizDisplayProp
   const [showSummary, setShowSummary] = useState(false);
 
   const score = selectedAnswers.reduce<number>(
-  (total, answer, i) => (answer === quiz[i].correctAnswerIndex ? total + 1 : total),
-  0
-);
+    (total, answer, i) => (answer === quiz[i].correctAnswerIndex ? total + 1 : total),
+    0
+  );
+
+  function buildQuizData() {
+    return {
+      title: "Quiz",
+      questions: quiz.map((q) => ({
+        text: q.question,
+        type: "multiple-choice" as const,
+        options: q.options,
+        correctAnswer: q.options[q.correctAnswerIndex],
+      })),
+    };
+  }
+
+  function handleDownloadStudent() { generateQuizPDF(buildQuizData(), "student"); }
+  function handleDownloadTeacher() { generateQuizPDF(buildQuizData(), "teacher"); }
 
   function selectAnswer(optionIndex: number) {
     if (revealed[currentIndex]) return;
@@ -81,6 +97,23 @@ export default function QuizDisplay({ quiz, onGenerateAnother }: QuizDisplayProp
             className="px-5 py-2.5 bg-[#2F6F4E] text-white rounded-lg text-sm font-medium hover:bg-[#24573D] transition-colors"
           >
             Generate a new quiz
+          </button>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-2 sm:justify-center mt-2">
+          <button
+            type="button"
+            onClick={handleDownloadStudent}
+            className="px-5 py-2.5 border border-[#D9D0BC] rounded-lg text-sm font-medium text-[#1E2A38] hover:border-[#2F6F4E]/50 transition-colors"
+          >
+            ⬇ Student PDF
+          </button>
+          <button
+            type="button"
+            onClick={handleDownloadTeacher}
+            className="px-5 py-2.5 border border-[#C1443C] rounded-lg text-sm font-medium text-[#C1443C] hover:bg-[#C1443C]/5 transition-colors"
+          >
+            🔑 Teacher PDF
           </button>
         </div>
       </div>
