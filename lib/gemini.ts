@@ -38,7 +38,7 @@ Write exactly ${numQuestions} quiz questions. ${typeInstruction}
 Each question needs one clearly correct answer and a one-sentence explanation of why that answer is correct.`;
 
   const response = await ai.models.generateContent({
-   model: "gemini-3.5-flash",
+    model: "gemini-2.0-flash-lite", // lighter model, separate free quota with higher limits
     contents: prompt,
     config: {
       responseMimeType: "application/json",

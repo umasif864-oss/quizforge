@@ -31,9 +31,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ quiz });
   } catch (error) {
     console.error("generate-quiz error:", error);
+
+    const message = error instanceof Error ? error.message : String(error);
+    const isQuota =
+      message.includes("429") ||
+      message.includes("RESOURCE_EXHAUSTED") ||
+      message.includes("quota");
+
     return NextResponse.json(
-      { error: "Something went wrong generating the quiz. Please try again." },
-      { status: 500 }
+      {
+        error: isQuota
+          ? "Gemini API quota exceeded. Wait a minute and try again, or add billing at https://ai.dev/rate-limit"
+          : "Something went wrong generating the quiz. Please try again.",
+      },
+      { status: isQuota ? 429 : 500 }
     );
   }
 }

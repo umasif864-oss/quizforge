@@ -1,21 +1,25 @@
-// src/utils/generatePDF.js
+// src/utils/generatePDF.ts
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
-/**
- * @param {Object} quiz
- * @param {string} quiz.title        - Quiz title
- * @param {string} [quiz.subject]    - Optional subject line
- * @param {Array}  quiz.questions    - Array of question objects
- *   Each question: {
- *     text: string,
- *     options: string[],          // e.g. ["Paris", "London", "Rome", "Berlin"]
- *     correctAnswer: string,      // e.g. "Paris"
- *     type: "multiple-choice" | "short-answer"
- *   }
- * @param {"teacher"|"student"} version
- */
-export function generateQuizPDF(quiz, version = "student") {
+// ── Types ─────────────────────────────────────────────────────────────────────
+export type QuizVersion = "teacher" | "student";
+
+export interface PDFQuestion {
+  text: string;
+  options?: string[];
+  correctAnswer?: string;
+  type: "multiple-choice" | "short-answer" | "true-false";
+}
+
+export interface PDFQuiz {
+  title?: string | null;
+  subject?: string | null;
+  questions: PDFQuestion[];
+}
+
+// ── Main export ───────────────────────────────────────────────────────────────
+export function generateQuizPDF(quiz: PDFQuiz, version: QuizVersion = "student"): void {
   if (typeof window === "undefined") return;
 
   const doc = new jsPDF({ unit: "pt", format: "letter" });
@@ -26,16 +30,28 @@ export function generateQuizPDF(quiz, version = "student") {
   const CONTENT_WIDTH = PAGE_WIDTH - MARGIN * 2;
   let y = MARGIN;
 
-  // ── Helpers ──────────────────────────────────────────────────────────────
+  // Resolved title — safe to use everywhere
+  const title: string = quiz.title ?? "Quiz";
 
-  const checkPageBreak = (neededHeight) => {
+  // ── Helpers ──────────────────────────────────────────────────────────────────
+
+  const checkPageBreak = (neededHeight: number): void => {
     if (y + neededHeight > doc.internal.pageSize.getHeight() - MARGIN) {
       doc.addPage();
       y = MARGIN;
     }
   };
 
-  const writeLine = (text, opts = {}) => {
+  const writeLine = (
+    text: string,
+    opts: {
+      fontSize?: number;
+      fontStyle?: "normal" | "bold" | "italic" | "bolditalic";
+      color?: [number, number, number];
+      indent?: number;
+      gap?: number;
+    } = {}
+  ): void => {
     const {
       fontSize = 11,
       fontStyle = "normal",
@@ -48,28 +64,29 @@ export function generateQuizPDF(quiz, version = "student") {
     doc.setFont("helvetica", fontStyle);
     doc.setTextColor(...color);
 
-    const lines = doc.splitTextToSize(text, CONTENT_WIDTH - indent);
+    const lines = doc.splitTextToSize(text, CONTENT_WIDTH - indent) as string[];
     checkPageBreak(lines.length * (fontSize * 1.4) + gap);
     doc.text(lines, MARGIN + indent, y);
     y += lines.length * (fontSize * 1.4) + gap;
   };
 
-  const drawHRule = (color = [200, 200, 200]) => {
+  const drawHRule = (color: [number, number, number] = [200, 200, 200]): void => {
     doc.setDrawColor(...color);
     doc.setLineWidth(0.5);
     doc.line(MARGIN, y, PAGE_WIDTH - MARGIN, y);
     y += 10;
   };
 
-  // ── Header ────────────────────────────────────────────────────────────────
+  // ── Header ───────────────────────────────────────────────────────────────────
 
-  doc.setFillColor(isTeacher ? 220 : 59, isTeacher ? 38 : 130, isTeacher ? 38 : 246);
+  const headerColor: [number, number, number] = isTeacher ? [220, 38, 38] : [59, 130, 246];
+  doc.setFillColor(...headerColor);
   doc.rect(0, 0, PAGE_WIDTH, 70, "F");
 
   doc.setFontSize(22);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(255, 255, 255);
-  doc.text(quiz.title || "Quiz", MARGIN, 38);
+  doc.text(title, MARGIN, 38);
 
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
@@ -81,25 +98,25 @@ export function generateQuizPDF(quiz, version = "student") {
   if (quiz.subject) {
     writeLine(`Subject: ${quiz.subject}`, { fontSize: 10, color: [100, 100, 100] });
   }
-  writeLine(`Date: ___________________________    Name: ___________________________`, {
+  writeLine("Date: ___________________________    Name: ___________________________", {
     fontSize: 10,
     color: [100, 100, 100],
   });
   y += 6;
   drawHRule();
 
-  // ── Questions ─────────────────────────────────────────────────────────────
+  // ── Questions ────────────────────────────────────────────────────────────────
 
-  quiz.questions.forEach((q, i) => {
+  quiz.questions.forEach((q: PDFQuestion, i: number) => {
     checkPageBreak(60);
 
     writeLine(`${i + 1}.  ${q.text}`, { fontSize: 12, fontStyle: "bold", gap: 10 });
 
     if (q.type === "multiple-choice" && Array.isArray(q.options)) {
       const letters = ["A", "B", "C", "D", "E"];
-      q.options.forEach((opt, j) => {
-        const prefix = `${letters[j] ?? j + 1}.`;
-        writeLine(`${prefix}  ${opt}`, { indent: 16, fontSize: 11, gap: 5 });
+      q.options.forEach((opt: string, j: number) => {
+        const prefix = letters[j] ?? String(j + 1);
+        writeLine(`${prefix}.  ${opt}`, { indent: 16, fontSize: 11, gap: 5 });
       });
 
       if (isTeacher && q.correctAnswer) {
@@ -136,7 +153,7 @@ export function generateQuizPDF(quiz, version = "student") {
     drawHRule([230, 230, 230]);
   });
 
-  // ── Teacher answer-key summary table ─────────────────────────────────────
+  // ── Teacher answer-key summary table ─────────────────────────────────────────
 
   if (isTeacher) {
     doc.addPage();
@@ -145,7 +162,7 @@ export function generateQuizPDF(quiz, version = "student") {
     writeLine("Answer Key Summary", { fontSize: 16, fontStyle: "bold", gap: 12 });
     drawHRule([59, 130, 246]);
 
-    const tableBody = quiz.questions.map((q, i) => [
+    const tableBody = quiz.questions.map((q: PDFQuestion, i: number) => [
       `${i + 1}`,
       q.text.length > 70 ? q.text.slice(0, 70) + "…" : q.text,
       q.correctAnswer ?? "—",
@@ -157,19 +174,13 @@ export function generateQuizPDF(quiz, version = "student") {
       body: tableBody,
       margin: { left: MARGIN, right: MARGIN },
       styles: { fontSize: 10, cellPadding: 6 },
-      headStyles: {
-        fillColor: [59, 130, 246],
-        textColor: 255,
-        fontStyle: "bold",
-      },
+      headStyles: { fillColor: [59, 130, 246], textColor: 255, fontStyle: "bold" },
       alternateRowStyles: { fillColor: [245, 248, 255] },
       columnStyles: { 0: { cellWidth: 30 }, 2: { cellWidth: 120 } },
     });
-
-    y = doc.lastAutoTable.finalY + 16;
   }
 
-  // ── Footer on every page ──────────────────────────────────────────────────
+  // ── Footer on every page ──────────────────────────────────────────────────────
 
   const totalPages = doc.internal.getNumberOfPages();
   for (let p = 1; p <= totalPages; p++) {
@@ -178,14 +189,18 @@ export function generateQuizPDF(quiz, version = "student") {
     doc.setFont("helvetica", "normal");
     doc.setTextColor(160, 160, 160);
     doc.text(
-      `${quiz.title ?? "Quiz"} — Generated by QuizForge    |    Page ${p} of ${totalPages}`,
+      `${title} — Generated by QuizForge    |    Page ${p} of ${totalPages}`,
       MARGIN,
       doc.internal.pageSize.getHeight() - 20
     );
   }
 
-  // ── Save ─────────────────────────────────────────────────────────────────
+  // ── Save ─────────────────────────────────────────────────────────────────────
 
-  const slug = (quiz.title ?? "quiz").toLowerCase().replace(/\s+/g, "-");
+  const slug = title
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9-]/g, "");
+
   doc.save(`${slug}-${version}.pdf`);
 }
