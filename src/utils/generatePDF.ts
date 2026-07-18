@@ -182,7 +182,7 @@ export function generateQuizPDF(quiz: PDFQuiz, version: QuizVersion = "student")
 
   // ── Footer on every page ──────────────────────────────────────────────────────
 
-  const totalPages = doc.internal.getNumberOfPages();
+  const totalPages = doc.getNumberOfPages();
   for (let p = 1; p <= totalPages; p++) {
     doc.setPage(p);
     doc.setFontSize(8);
